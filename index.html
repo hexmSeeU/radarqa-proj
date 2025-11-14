@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="description"
+    content="SynWeather: Weather Observation Data Synthesis across Multiple Regions and Variables via a General Diffusion Transformer">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SynWeather: Weather Observation Data Synthesis across Multiple Regions and Variables via a General Diffusion Transformer</title>
+
+  <!--   Global site tag (gtag.js) - Google Analytics-->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y5ZVQZ7NHC"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-Y5ZVQZ7NHC');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+  <link rel="stylesheet" href="./assets/artimuse/css/bulma.min.css">
+  <link rel="stylesheet" href="./assets/artimuse/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./assets/artimuse/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./assets/artimuse/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./assets/artimuse/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./assets/artimuse/js/fontawesome.all.min.js"></script>
+  <script src="./assets/artimuse/js/bulma-carousel.min.js"></script>
+  <script src="./assets/artimuse/js/bulma-slider.min.js"></script>
+  <script src="./assets/artimuse/js/index.js"></script>
+</head>
+
+<body>
+
+
+
+
+  <!-- Fullscreen Hero with Deep Transparent Gradient and Background Images -->
+  <section class="hero is-fullheight" style="position: relative; overflow: hidden;">
+    <!-- Background tile images from folder -->
+    <!-- 背景容器 -->
+    <div id="background-scroller" style="
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    opacity: 0.90;
+    pointer-events: none;
+    ">
+    </div>
+
+    <script>
+      // 假设你有图片名为 1.jpg 到 12.jpg（可按需调整）
+      const imageCount = 24;  // 假设目录下有12张图
+      const imagePath = 'assets/artimuse/images/artworks_demo/';
+      const rows = 3;  // 显示3行滚动图像
+      const imagesPerRow = Math.ceil(imageCount / rows);
+      const background = document.getElementById('background-scroller');
+
+      for (let r = 0; r < rows; r++) {
+        const row = document.createElement('div');
+        row.className = 'scroll-row';
+        row.style.top = `${(100 / rows) * r}%`;
+
+        // 原图像 + 复制一份，实现无缝滚动
+        for (let dup = 0; dup < 2; dup++) { // 重复两次
+          for (let i = 0; i < imagesPerRow; i++) {
+            const imgIndex = r * imagesPerRow + i;
+            const filename = `${(imgIndex % imageCount) + 1}.png`;
+            const img = document.createElement('img');
+            img.src = `${imagePath}${filename}`;
+            img.className = 'scroll-img';
+            row.appendChild(img);
+          }
+        }
+
+        background.appendChild(row);
+      }
+
+    </script>
+
+    <style>
+      .scroll-row {
+        position: absolute;
+        left: 0;
+        width: 200%;
+        /* 滚动区域更宽，包含两份图像 */
+        height: calc(25% - 10px);
+        /* 每行高度去除间距 */
+        display: flex;
+        align-items: center;
+        animation: scrollRow 40s linear infinite;
+        margin-bottom: 10px;
+        /* 与图像间距一致 */
+        box-sizing: border-box;
+      }
+
+      .scroll-row:nth-child(even) {
+        animation-direction: reverse;
+      }
+
+      .scroll-row:last-child {
+        margin-bottom: 0;
+        /* 去掉最后一行多余间距 */
+      }
+
+      .scroll-img {
+        width: 400px;
+        height: 320px;
+        object-fit: cover;
+        flex-shrink: 0;
+        margin-right: 10px;
+        opacity: 1.0;
+      }
+
+      @keyframes scrollRow {
+        0% {
+          transform: translateX(0);
+        }
+
+        100% {
+          transform: translateX(-50%);
+        }
+      }
+    </style>
+
+
+
+    <!-- Overlay to darken the background -->
+    <div style="
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(to bottom right, rgba(10, 25, 80, 0.85), rgba(30, 30, 30, 0.9));
+    z-index: 1;">
+    </div>
+
+
+
+    <!-- Main content -->
+    <div class="hero-body" style="position: relative; z-index: 2;">
+      <div class="container has-text-centered">
+        <h1 class="title is-1 has-text-weight-bold" style="color: #f8f8f6; font-style: italic;">
+          <span style="color: #FF3E3E;">S</span><span style="color: #FF914D;">y</span><span
+            style="color: #FFC94D;">n</span><span style="color: #B6E24D;">W</span><span
+            style="color: #4DDC95;">e</span><span style="color: #4DB8FF;">a</span><span
+            style="color: #8564FF;">t</span><span style="color: #C74DFF;">h</span><span
+            style="color: #8564FF;">e</span><span style="color: #C74DFF;">r</span>:
+            Weather Observation Data Synthesis across Multiple Regions and Variables via a General Diffusion Transformer
+        </h1>
+
+<!--        &lt;!&ndash; 中文副标题 &ndash;&gt;-->
+<!--        <p style="margin-top: 1rem; font-size: 3rem; color: #dcdcdc; font-weight: bold; font-style: italic; letter-spacing: 1px; font-family: 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', sans-serif;-->
+
+<!--">-->
+<!--          多区域多变量气象观测数据合成数据集与通用扩散模型-->
+<!--        </p>-->
+        
+
+
+
+
+        <style>
+          .publication-authors {
+            color: #E0E0E0;
+            /* 默认文字颜色，改为非常浅的灰色，比纯白更柔和 */
+          }
+
+          .publication-authors sup {
+            color: #E0E0E0;
+            /* 上标颜色与默认文字保持一致 */
+          }
+
+          .publication-authors a {
+            color: #87CEEB;
+            /* 亮蓝色，比原先的 #4da6ff 更亮一些，与深色背景形成对比，类似标题的亮黄色文字效果 */
+            text-decoration: none;
+            /* 去掉下划线 */
+          }
+
+          .publication-authors a:hover {
+            color: #ADD8E6;
+            /* 悬停时颜色，比默认链接颜色更亮，提供视觉反馈 */
+          }
+        </style>
+
+
+
+        <!-- Author list -->
+        <div class="is-size-5 publication-authors">
+          <span class="author-block">
+            <a href="" target="_blank">Kaiyi Xu</a><sup>1,2*</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Junchao Gong</a><sup>2,3*</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Zhiwang Zhou</a><sup>2,4</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Zhangrui Li</a><sup>2,5</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Yuandao Pu</a><sup>2,3</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Yihao Liu</a><sup>2</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Ben Fei</a><sup>2,6</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Fenghua Ling</a><sup>2</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Wenlong Zhang</a><sup>2&#8224;</sup>
+          </span>
+          <span class="author-block">
+            <a href="" target="_blank">Lei Bai</a><sup>2&#8224;</sup>
+          </span>
+        </div>
+
+        <!-- Corresponding‑author note -->
+        <div class="is-size-5 publication-authors">
+          <span class="author-block"><sup>*</sup> Equal contribution</span>
+          <span class="author-block"><sup>&#8224;</sup> Corresponding author</span>
+        </div>
+
+        <!-- Affiliations -->
+        <div class="is-size-5 publication-authors">
+          <span class="author-block">
+            <sup>1</sup> University of Science and Technology of China&nbsp;&nbsp;
+            <sup>2</sup> Shanghai AI Laboratory&nbsp;&nbsp;
+            <sup>3</sup> Shanghai Jiao Tong University&nbsp;&nbsp;<br>
+            <sup>4</sup> Tongji University&nbsp;
+            <sup>5</sup> Nanjing University&nbsp;&nbsp;
+            <sup>6</sup> The Chinese University of Hong Kong&nbsp;&nbsp;<br>
+          </span>
+        </div>
+
+
+        <!-- Buttons -->
+        <div class="buttons is-centered mt-5">
+<!--          <span class="link-block">-->
+<!--            <a href="https://arxiv.org/abs/2507.14533" target="_blank"-->
+<!--              class="external-link button is-normal is-rounded has-background-white has-text-black">-->
+<!--              <span class="icon">-->
+<!--                <i class="ai ai-arxiv"></i>-->
+<!--              </span>-->
+<!--              <span>Paper</span>-->
+<!--            </a>-->
+<!--          </span>-->
+          <!-- Code Link. -->
+          <span class="link-block">
+            <a href="https://github.com/Dtdtxuky/SynWeather" target="_blank"
+              class="external-link button is-normal is-rounded has-background-white has-text-black">
+              <span class="icon">
+                <i class="fab fa-github"></i>
+              </span>
+              <span>Code</span>
+            </a>
+          </span>
+<!--          &lt;!&ndash; ModelScope Demo Link. &ndash;&gt;-->
+<!--          <span class="link-block">-->
+<!--            <a href="https://huggingface.co/collections/Thunderbolt215215/artimuse-68b7d2c7137d8ed119c8774e" target="_blank"-->
+<!--              class="external-link button is-normal is-rounded has-background-white has-text-black">-->
+<!--              <span class="icon">-->
+<!--                <img src="assets/artimuse/hf-logo.svg" style="display:block;width:330px;height:240px" />-->
+<!--              </span>-->
+<!--              <span>Checkpoints</span>-->
+<!--            </a>-->
+<!--          </span>-->
+<!--          &lt;!&ndash; Huggingface Demo Link. &ndash;&gt;-->
+<!--          <span class="link-block">-->
+<!--            <a href="" target="_blank"-->
+<!--              class="external-link button is-normal is-rounded has-background-white has-text-black">-->
+<!--              <span class="icon">-->
+<!--                <img src="assets/artimuse/hf-logo.svg" style="display:block;width:330px;height:240px" />-->
+<!--              </span>-->
+<!--              <span>Dataset (upcoming)</span>-->
+<!--            </a>-->
+<!--          </span>-->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- News -->
+  <!-- News Section -->
+  <!-- News -->
+  <!-- News -->
+  <section style="background: white; padding: 3rem 1rem;">
+    <div class="container" style="max-width: 1000px;">
+      <div class="columns is-centered">
+        <div class="column is-full">
+          <div class="box"
+            style="background: white; border-radius: 1rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); padding: 2rem 2rem;">
+            <h2 class="title is-3 has-text-left" style="color: #1e3a8a; margin-bottom: 1.5rem;">
+              📰 News & Updates
+            </h2>
+            <ul class="content" style="list-style: none; padding-left: 0;">
+
+              <li style="margin-bottom: 1.5rem; display: flex; align-items: flex-start;">
+                <span style="font-size: 1.4rem; margin-right: 0.75rem; color: #2563eb;">🚀</span>
+                <div>
+                  <p style="margin-bottom: 0.3rem; font-weight: 600; color: #1a202c;">Nov 8, 2025</p>
+                  <p style="margin: 0;"><strong>Accepted by AAAI-26 Oral</strong> 🎉</p>
+                </div>
+              </li>
+  
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  
+<!--  <section class="hero teaser">-->
+<!--    <div class="container is-max-desktop">-->
+<!--      <h2 class="title is-3 has-text-centered" style="-->
+<!--          margin-bottom: 0.5rem;-->
+<!--          background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);-->
+<!--          -webkit-background-clip: text;-->
+<!--          -webkit-text-fill-color: transparent;-->
+<!--          font-weight: 700;-->
+<!--        ">-->
+<!--        Online Demo-->
+<!--      </h2>-->
+<!--      &lt;!&ndash; 底部分割线 &ndash;&gt;-->
+<!--      <div style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">-->
+<!--      </div>-->
+  
+<!--      &lt;!&ndash; Demo入口按钮 &ndash;&gt;-->
+<!--      <div class="has-text-centered" style="margin-bottom: 2rem;">-->
+<!--        <a href="http://artimuse.intern-ai.org.cn/" target="_blank" class="button is-primary is-medium"-->
+<!--           style="background-color: #3b82f6; border: none;">-->
+<!--          👉 Try the Online Demo Now-->
+<!--        </a>-->
+<!--      </div>-->
+  
+<!--      &lt;!&ndash; 单张大图展示 &ndash;&gt;-->
+<!--      <div class="has-text-centered">-->
+<!--        <figure class="image is-inline-block" style="max-width: 90%; margin-bottom: 1rem;">-->
+<!--          <img src="assets/artimuse/online_demo/code.jpg" alt="Online Demo QR Code" style="border-radius: 1rem; max-width: 100%; height: auto;">-->
+<!--        </figure>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </section>-->
+  
+  
+
+  <section class="hero teaser">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered" style="
+          margin-bottom: 0.5rem;
+          background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 700;
+        ">
+        Abstract
+      </h2>
+      <!-- 底部分割线 -->
+      <div style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">
+      </div>
+      <!-- <h2 class="title is-3 has-text-centered" style="margin-bottom: 1rem;">Overview of ArtiMuse</h2> 新增标题 -->
+      <div class="hero-body">
+        <p style="margin-top: 0;">
+        With the advancement of meteorological instruments, increasingly abundant data has become available.
+        However, due to intrinsic limitations such as environmental sensitivity and orbital constraints, raw observations often contain temporal or spatial gaps, making it essential to employ data synthesis techniques to fill in missing information.
+        Existing approaches typically focus on single-variable or single-region tasks and primarily rely on deterministic modeling.
+        This limits unified synthesis across variables and regions, overlooks cross-variable complementarity, and often leads to over-smoothed results.
+
+        To address these challenges, we introduce <strong>SynWeather</strong>, the first dataset designed for
+        <strong>Unified Multi-region and Multi-variable Weather Observation Data Synthesis</strong>.
+        SynWeather covers four representative regions—the Continental United States, Europe, East Asia, and Tropical Cyclone areas—and provides high-resolution observations of key weather variables, including Composite Radar Reflectivity, Hourly Precipitation, Visible Light, and Microwave Brightness Temperature.
+
+        In addition, we present <strong>SynWeatherDiff</strong>, a general and probabilistic weather synthesis model built upon the Diffusion Transformer framework to mitigate the over-smoothing issue.
+        Experiments on the SynWeather dataset demonstrate that our model outperforms both task-specific and general baselines.
+
+        Moreover, SynWeatherDiff produces fine-grained and accurate estimates, especially in high-value weather regions.
+        Through this dataset and baseline model, we aim to advance downstream meteorological tasks and promote the development of general models for weather variable synthesis.
+        </p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- teaser -->
+  <!-- teaser -->
+  <section class="hero teaser">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered" style="
+          margin-bottom: 0.5rem;
+          background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 700;
+        ">
+        Overview of datasets and pipelines in weather variable synthesis
+      </h2>
+      <!-- 底部分割线 -->
+      <div style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">
+      </div>
+      <!-- <h2 class="title is-3 has-text-centered" style="margin-bottom: 1rem;">Overview of ArtiMuse</h2> 新增标题 -->
+      <div class="hero-body">
+        <img src="assets/artimuse/images/paper/Teaser.png" style="width:100%; margin-bottom:10px" alt="Teaser." />
+        <p style="margin-top: 0;">
+          <b>Overview of datasets and pipelines in weather variable synthesis</b>. Compared to existing single-region, single-variable and deterministic modeling, SynWeather enables general multi-region, multi-variable probabilistic modeling.
+        </p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Dataset -->
+  <section class="hero teaser">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <div class="section-title">
+          <h2 class="title is-3 has-text-centered" style="
+          margin-bottom: 0.5rem;
+          background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 700;
+        ">
+            Overview of SynWeather
+          </h2>
+          <!-- 底部分割线 -->
+          <div
+            style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">
+          </div>
+          <!-- <h2 class="title is-3 is-centered"> Comparison with Existing Models </h2> -->
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column">
+            <p class="is-italic has-text-black" style="margin-bottom: 5px; font-size: 1rem;">
+            </p>
+            <div class="publication-img">
+              <img src="assets/artimuse/images/paper/SynWeather.png" style="width:100%; margin-bottom:10px" alt="Teaser." />
+              <p style="margin-top: 0;">
+                <b>Overview of SynWeather. </b>SynWeather is a comprehensive dataset that covers four distinct regions and four key weather observation variables, integrating data from six satellite sources as a condition to support seven synthesis tasks. Extensive evaluations are conducted on seven models, comprising both task-specific and general synthesis models.
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- 需要先引入 Bulma 样式 -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+        <style>
+          /* 容器和表格基础样式 */
+          .table-container {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(100, 150, 255, 0.1);
+          }
+
+          table.table {
+            background-color: #ffffff;
+            border-radius: 0;
+            box-shadow: none;
+            border-collapse: separate;
+            /* 为了单独控制边框 */
+            border-spacing: 0 0;
+            /* 去除间距 */
+          }
+
+          /* 表头浅蓝色背景和字色 */
+          table.table thead tr:first-child th {
+            background: #d0e7ff;
+            color: #1a237e;
+            font-weight: 700;
+            font-size: 1.05rem;
+            border-bottom: 2px solid #90caf9;
+            border-left: none !important;
+            border-right: none !important;
+          }
+
+          table.table thead tr:nth-child(2) th {
+            background-color: #e6f0ff;
+            color: #3949ab;
+            font-weight: 600;
+            border-bottom: 1px solid #bbdefb;
+            border-left: none !important;
+            border-right: none !important;
+          }
+
+          /* 单元格居中，深灰字体，白底，无竖线 */
+          .table-container table.table td,
+          .table-container table.table th {
+            text-align: center !important;
+            vertical-align: middle !important;
+            color: #2c3e50;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.85rem;
+            background-color: #ffffff !important;
+            /* 统一白底 */
+            border-left: none !important;
+            /* 去除左边框 */
+            border-right: none !important;
+            /* 去除右边框 */
+            border-top: 1px solid #bbdefb !important;
+            /* 保留横线：上边框 */
+            border-bottom: 1px solid #bbdefb !important;
+            /* 保留横线：下边框 */
+          }
+
+          /* 第一行（thead）上边框加粗（避免两条线重叠） */
+          table.table thead tr:first-child th {
+            border-top: 3px solid #90caf9 !important;
+          }
+
+          /* 分组标题白底深蓝字，去掉背景浅蓝 */
+          tbody tr th.has-background-light {
+            background: #ffffff !important;
+            color: #1a237e;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            border: none !important;
+          }
+
+          /* 行悬浮白底不变，字体加深 */
+          tbody tr:hover:not(.highlight-row) {
+            background-color: #ffffff !important;
+            color: #0d47a1 !important;
+            cursor: default;
+            transition: color 0.3s ease;
+          }
+
+          /* 突出最后一行（我们的模型），始终生效 */
+          tbody tr.highlight-row {
+            background-color: #bbdefb !important;
+            color: #0d47a1 !important;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 0 12px 4px rgba(33, 150, 243, 0.7);
+            transform: scale(1.02);
+            transition: none;
+            /* 取消过渡动画 */
+          }
+        </style>
+
+        <p class="is-italic has-text-black" style="margin-bottom: 5px; font-size: 1rem;">
+            <b>SynWeather Dataset Details</b>
+        </p>
+        <p class="is-italic has-text-black has-text-centered" style="margin-bottom: 5px; font-size: 1rem;">
+        <div class="table-container">
+          <table class="table is-bordered is-striped is-hoverable is-fullwidth is-size-7">
+            <thead>
+              <tr>
+                <th rowspan="2">Region</th>
+                <th colspan="3">Input</th>
+                <th colspan="3">Target</th>
+                <th rowspan="2">Sample<br>Numbers</th>
+                <th rowspan="2">Year</th>
+              </tr>
+              <tr>
+                <th>Satellite</th>
+                <th>Band</th>
+                <th>Spatial Res. (km)</th>
+                <th>Variable</th>
+                <th>Source</th>
+                <th>Spatial Res. (km)</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <!-- CONUS -->
+              <tr>
+                <th rowspan="2" class="has-background-light">CONUS</th>
+                <td rowspan="2">GOES-16</td>
+                <td rowspan="2">C07–16</td>
+                <td rowspan="2">2</td>
+
+                <td>CR</td>
+                <td>GREMLIN CONUS3 Dataset</td>
+                <td>3</td>
+                <td>142k</td>
+                <td rowspan="2">2020–2022</td>
+              </tr>
+              <tr>
+                <td>Precipitation</td>
+                <td>MRMS</td>
+                <td>1</td>
+                <td>20k</td>
+              </tr>
+
+              <!-- Europe -->
+              <tr>
+                <th rowspan="2" class="has-background-light">Europe</th>
+                <td rowspan="2">Meteosat-11</td>
+                <td rowspan="2">IR_016–134<br>WV_062–073</td>
+                <td rowspan="2">3</td>
+
+                <td>Visible light</td>
+                <td>Meteosat-11</td>
+                <td>3</td>
+                <td>372k</td>
+                <td rowspan="2">2019–2021</td>
+              </tr>
+              <tr>
+                <td>Precipitation</td>
+                <td>EURADCLIM</td>
+                <td>1</td>
+                <td>25k</td>
+              </tr>
+
+              <!-- East Asia -->
+              <tr>
+                <th rowspan="2" class="has-background-light">East Asia</th>
+                <td rowspan="2">Himawari-8</td>
+                <td rowspan="2">C07–16</td>
+                <td rowspan="2">2</td>
+
+                <td>Visible light</td>
+                <td>Himawari-8</td>
+                <td>2</td>
+                <td>503k</td>
+                <td>2019–2021</td>
+              </tr>
+              <tr>
+                <td>Precipitation</td>
+                <td>GPM</td>
+                <td>10</td>
+                <td>15k</td>
+                <td>2021.7</td>
+              </tr>
+
+              <!-- TC Region -->
+              <tr>
+                <th rowspan="2" class="has-background-light">TC Region</th>
+                <td>GOES-16/17/18</td>
+                <td>C07–16</td>
+                <td rowspan="2">2</td>
+
+                <td rowspan="2">MWBT</td>
+                <td rowspan="2">AMSR-2 / GMI</td>
+                <td rowspan="2">7×12, 3×5<br>8.6×14, 4.4×7.2</td>
+                <td rowspan="2">9k</td>
+                <td rowspan="2">2015–2023</td>
+              </tr>
+              <tr>
+                <td>Himawari-8/9</td>
+                <td>C07–16</td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!--  &lt;!&ndash; Results &ndash;&gt;-->
+<!--  &lt;!&ndash; ① 引入 Bulma 与可选的图标字体 &ndash;&gt;-->
+<!--  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />-->
+<!--  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" />-->
+
+<!--  <section class="hero teaser">-->
+<!--    <div class="container is-max-desktop">-->
+<!--      <div class="section-title">-->
+<!--        <h2 class="title is-3 has-text-centered" style="-->
+<!--      margin-bottom: 0.5rem;-->
+<!--      background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);-->
+<!--      -webkit-background-clip: text;-->
+<!--      -webkit-text-fill-color: transparent;-->
+<!--      font-weight: 700;-->
+<!--    ">-->
+<!--          Results on Real‑world Images-->
+<!--        </h2>-->
+<!--        &lt;!&ndash; 底部分割线 &ndash;&gt;-->
+<!--        <div-->
+<!--          style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      <div class="columns is-vcentered">-->
+<!--        &lt;!&ndash; ===== 左侧：图像容器 ===== &ndash;&gt;-->
+<!--        <div class="column is-half"-->
+<!--          style="display: flex; flex-direction: column; justify-content: center; height: 100%; align-items: center;">-->
+<!--          &lt;!&ndash; 外层容器添加 align-items: center 确保水平居中 &ndash;&gt;-->
+<!--          <div style="display: flex; flex-direction: column; align-items: center; width: 550px;">-->
+<!--            &lt;!&ndash; 图像容器 &ndash;&gt;-->
+<!--            <div class="image-container" style="-->
+<!--              position: relative;-->
+<!--              width:480px;-->
+<!--              height: 360px;-->
+<!--              margin: 0 auto;-->
+<!--              overflow: hidden;-->
+<!--              border-radius: 8px;-->
+<!--              background: #f5f5f5;-->
+<!--              display: flex;-->
+<!--              align-items: center;-->
+<!--              justify-content: center;-->
+<!--              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);-->
+<!--            ">-->
+<!--              <img id="main-img" src="img1.jpg" style="width: 100%; height: 100%; object-fit: cover;" />-->
+<!--              &lt;!&ndash; 导航按钮 &ndash;&gt;-->
+<!--              <button id="prev" class="button is-small is-light"-->
+<!--                style="position:absolute;left:12px;top:50%;transform:translateY(-50%);">-->
+<!--                <span class="icon"><i class="fas fa-chevron-left"></i></span>-->
+<!--              </button>-->
+<!--              <button id="next" class="button is-small is-light"-->
+<!--                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);">-->
+<!--                <span class="icon"><i class="fas fa-chevron-right"></i></span>-->
+<!--              </button>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; 评分框 (与图像同宽且对齐) &ndash;&gt;-->
+<!--            <div style="-->
+<!--              width: 480px;-->
+<!--              margin-top: 1rem;-->
+<!--              padding: 0.8rem 1.5rem;-->
+<!--              background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);-->
+<!--              border-radius: 8px;-->
+<!--              border-left: 4px solid #38bdf8;-->
+<!--              box-shadow: 0 2px 8px rgba(0,0,0,0.05);-->
+<!--              text-align: center;-->
+<!--            ">-->
+<!--              <div style="-->
+<!--                font-size: 0.9rem;-->
+<!--                color: #0369a1;-->
+<!--                font-weight: 600;-->
+<!--                letter-spacing: 0.5px;-->
+<!--                margin-bottom: 0.2rem;-->
+<!--              ">-->
+<!--                Aesthetics Score-->
+<!--              </div>-->
+<!--              <div style="-->
+<!--                font-size: 1.25rem;-->
+<!--                font-weight: 700;-->
+<!--                color: #0c4a6e;-->
+<!--              ">-->
+<!--                <span id="score" style="color: #0284c7;">87</span>-->
+<!--                <span style="font-weight: 400; color: #64748b;"> / 100</span>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; ===== 右侧：按钮 ===== &ndash;&gt;-->
+<!--        <div class="column is-half" style="height: 100%;">-->
+<!--          <div id="tab-buttons" class="buttons is-multiline"-->
+<!--            style="height: 100%; display: flex; flex-direction: column; justify-content: center; margin-left: 10;">-->
+<!--            <div style="display: flex; flex-direction: column; gap: 0rem;">-->
+<!--              &lt;!&ndash; 统一白色文字 + 文字阴影提升可读性 &ndash;&gt;-->
+<!--              <button class="button is-selected" data-panel="composition"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Composition &amp;-->
+<!--                Design</button>-->
+<!--              <button class="button" data-panel="visual"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Visual Elements-->
+<!--                &amp; Structure</button>-->
+<!--              <button class="button" data-panel="technical"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Technical-->
+<!--                Execution</button>-->
+<!--              <button class="button" data-panel="originality"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Originality &amp;-->
+<!--                Creativity</button>-->
+<!--              <button class="button" data-panel="theme"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Theme &amp;-->
+<!--                Communication</button>-->
+<!--              <button class="button" data-panel="emotion"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Emotion &amp;-->
+<!--                Viewer Response</button>-->
+<!--              <button class="button" data-panel="gestalt"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Overall-->
+<!--                Gestalt</button>-->
+<!--              <button class="button" data-panel="overall"-->
+<!--                style="width: 145%; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5)">Comprehensive-->
+<!--                Evaluation</button>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
+
+<!--      &lt;!&ndash; ===== 文本框部分 ===== &ndash;&gt;-->
+<!--      <div id="panels" style="margin-top: 1.5rem; height: 250px;"> &lt;!&ndash; 增加高度 &ndash;&gt;-->
+<!--        <div id="composition" class="panel-content is-active"></div>-->
+<!--        <div id="visual" class="panel-content"></div>-->
+<!--        <div id="technical" class="panel-content"></div>-->
+<!--        <div id="originality" class="panel-content"></div>-->
+<!--        <div id="theme" class="panel-content"></div>-->
+<!--        <div id="emotion" class="panel-content"></div>-->
+<!--        <div id="gestalt" class="panel-content"></div>-->
+<!--        <div id="overall" class="panel-content"></div>-->
+<!--      </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; ===== 交互脚本 ===== &ndash;&gt;-->
+<!--    <script>-->
+<!--      /* 图片、分数、JSON 路径 */-->
+<!--      const images = [-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/img_20250606_205014582209.jpg',-->
+<!--          score: 86, json: 'assets/artimuse/images/results/analysis/img_20250606_205014582209.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/img_20250609_102200391755.jpg',-->
+<!--          score: 46, json: 'assets/artimuse/images/results/analysis/img_20250609_102200391755.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/img_20250604_222126032553.jpg',-->
+<!--          score: 33, json: 'assets/artimuse/images/results/analysis/img_20250604_222126032553.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/zdq_1.jpg',-->
+<!--          score: 87, json: 'assets/artimuse/images/results/analysis/zdq_1.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/img_20250609_141559880336.jpg',-->
+<!--          score: 96, json: 'assets/artimuse/images/results/analysis/img_20250609_141559880336.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/img_20250530_205539491476.jpg',-->
+<!--          score: 69, json: 'assets/artimuse/images/results/analysis/img_20250530_205539491476.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/0_420.jpg',-->
+<!--          score: 54, json: 'assets/artimuse/images/results/analysis/0_420.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/8_23.jpg',-->
+<!--          score: 65, json: 'assets/artimuse/images/results/analysis/8_23.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/img_20250530_193518371464.jpg',-->
+<!--          score: 70, json: 'assets/artimuse/images/results/analysis/img_20250530_193518371464.json'-->
+<!--        },-->
+<!--        {-->
+<!--          src: 'assets/artimuse/images/results/images/img_20250611_130831439697.jpg',-->
+<!--          score: 71, json: 'assets/artimuse/images/results/analysis/img_20250611_130831439697.json'-->
+<!--        }-->
+<!--      ];-->
+
+<!--      const imgEl = document.getElementById('main-img');-->
+<!--      const scoreEl = document.getElementById('score');-->
+<!--      const panels = document.querySelectorAll('.panel-content');-->
+<!--      const buttons = document.querySelectorAll('#tab-buttons .button');-->
+
+<!--      let current = 0;-->
+<!--      const metaCache = new Map();-->
+
+<!--      /* -&#45;&#45; 面板 id ↔ JSON 键 的映射 -&#45;&#45; */-->
+<!--      const PANEL_MAP = {-->
+<!--        composition: 'Composition & Design',-->
+<!--        visual: 'Visual Elements & Structure',-->
+<!--        technical: 'Technical Execution',-->
+<!--        originality: 'Originality & Creativity',-->
+<!--        theme: 'Theme & Communication',-->
+<!--        emotion: 'Emotion & Viewer Response',-->
+<!--        gestalt: 'Overall Gestalt',-->
+<!--        overall: 'Comprehensive Evaluation'-->
+<!--      };-->
+
+<!--      async function show(index) {-->
+<!--        const { src, score, json } = images[index];-->
+<!--        imgEl.src = src;-->
+<!--        scoreEl.textContent = score;-->
+
+<!--        /* 载入 / 缓存 JSON */-->
+<!--        let meta = metaCache.get(json);-->
+<!--        if (!meta) {-->
+<!--          try {-->
+<!--            const res = await fetch(json);-->
+<!--            meta = res.ok ? await res.json() : {};-->
+<!--            metaCache.set(json, meta);-->
+<!--          } catch (e) { meta = {}; }-->
+<!--        }-->
+
+<!--        /* 用 PANEL_MAP 把 id 转回 JSON 键名 */-->
+<!--        panels.forEach(p => {-->
+<!--          const key = PANEL_MAP[p.id] || p.id;-->
+<!--          const txt = meta[key]?.response ?? 'No description.';-->
+<!--          p.dataset.content = txt;-->
+<!--        });-->
+
+<!--        /* 把当前激活面板的文字马上写出来 */-->
+<!--        const active = document.querySelector('.panel-content.is-active');-->
+<!--        if (active) active.textContent = active.dataset.content;-->
+<!--      }-->
+
+<!--      /* 左右切换图片 */-->
+<!--      document.getElementById('prev').onclick = () => {-->
+<!--        current = (current - 1 + images.length) % images.length;-->
+<!--        show(current);-->
+<!--      };-->
+<!--      document.getElementById('next').onclick = () => {-->
+<!--        current = (current + 1) % images.length;-->
+<!--        show(current);-->
+<!--      };-->
+<!--      document.addEventListener('keydown', e => {-->
+<!--        if (e.key === 'ArrowLeft') document.getElementById('prev').click();-->
+<!--        if (e.key === 'ArrowRight') document.getElementById('next').click();-->
+<!--      });-->
+
+<!--      /* 点击按钮切换面板并显示文字 */-->
+<!--      buttons.forEach(btn => {-->
+<!--        btn.addEventListener('click', () => {-->
+<!--          buttons.forEach(b => b.classList.remove('is-selected'));-->
+<!--          btn.classList.add('is-selected');-->
+
+<!--          const target = btn.dataset.panel;-->
+<!--          panels.forEach(p => {-->
+<!--            const active = p.id === target;-->
+<!--            p.classList.toggle('is-active', active);-->
+<!--            if (active) p.textContent = p.dataset.content;-->
+<!--          });-->
+<!--        });-->
+<!--      });-->
+
+<!--      /* 初始化 */-->
+<!--      show(current);-->
+<!--    </script>-->
+
+<!--    &lt;!&ndash; ===== 样式补充 ===== &ndash;&gt;-->
+<!--    <style>-->
+<!--      /* 按钮样式 */-->
+<!--      #tab-buttons {-->
+<!--        display: flex;-->
+<!--        flex-direction: column;-->
+<!--        gap: 0.5rem;-->
+<!--      }-->
+
+<!--      #tab-buttons .button {-->
+<!--        text-align: center;-->
+<!--        justify-content: center;-->
+<!--        white-space: normal;-->
+<!--        height: auto;-->
+<!--        padding: 0.75rem;-->
+<!--        font-weight: 500;-->
+<!--        transition: all 0.2s ease;-->
+<!--        width: 100%;-->
+<!--        flex: none;-->
+<!--        border: none;-->
+<!--        color: white;-->
+<!--        font-weight: bold;-->
+<!--        opacity: 0.9;-->
+<!--      }-->
+
+<!--      /* 浅色彩虹配色按钮 */-->
+<!--      #tab-buttons .button:nth-child(1) {-->
+<!--        background-color: rgba(255, 62, 62, 0.7);-->
+<!--        /* 浅红 */-->
+<!--      }-->
+
+<!--      #tab-buttons .button:nth-child(2) {-->
+<!--        background-color: rgba(255, 145, 77, 0.7);-->
+<!--        /* 浅橙 */-->
+<!--      }-->
+
+<!--      #tab-buttons .button:nth-child(3) {-->
+<!--        background-color: rgba(255, 201, 77, 0.7);-->
+<!--        /* 浅黄 */-->
+<!--      }-->
+
+<!--      #tab-buttons .button:nth-child(4) {-->
+<!--        background-color: rgba(182, 226, 77, 0.7);-->
+<!--        /* 浅绿 */-->
+<!--      }-->
+
+<!--      #tab-buttons .button:nth-child(5) {-->
+<!--        background-color: rgba(77, 220, 149, 0.7);-->
+<!--        /* 浅青 */-->
+<!--      }-->
+
+<!--      #tab-buttons .button:nth-child(6) {-->
+<!--        background-color: rgba(77, 184, 255, 0.7);-->
+<!--        /* 浅蓝 */-->
+<!--      }-->
+
+<!--      /* 最后两个按钮单独处理 */-->
+<!--      #tab-buttons .button:nth-child(7),-->
+<!--      #tab-buttons .button:nth-child(8) {-->
+<!--        width: 100%;-->
+<!--        /* 确保各占一行 */-->
+<!--        display: block;-->
+<!--        margin-top: 0.5rem;-->
+<!--      }-->
+
+<!--      #tab-buttons .button:nth-child(7) {-->
+<!--        background-color: rgba(133, 100, 255, 0.7);-->
+<!--        /* 浅靛 */-->
+<!--      }-->
+
+<!--      #tab-buttons .button:nth-child(8) {-->
+<!--        background-color: rgba(199, 77, 255, 0.7);-->
+<!--        /* 浅紫 */-->
+<!--      }-->
+
+<!--      /* 悬停效果 */-->
+<!--      #tab-buttons .button:hover {-->
+<!--        opacity: 1;-->
+<!--        transform: translateY(-2px);-->
+<!--        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);-->
+<!--      }-->
+
+<!--      /* 激活按钮高亮 */-->
+<!--      .button.is-selected {-->
+<!--        opacity: 1;-->
+<!--        transform: translateY(-2px);-->
+<!--        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);-->
+<!--        border-left: 4px solid white;-->
+<!--      }-->
+
+<!--      /* 文本面板样式 */-->
+<!--      .panel-content {-->
+<!--        display: none;-->
+<!--        height: 100%;-->
+<!--        background-color: #ffffff;-->
+<!--        padding: 1.25rem;-->
+<!--        border-radius: 10px;-->
+<!--        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);-->
+<!--        color: #333;-->
+<!--        font-size: 1rem;-->
+<!--        line-height: 1.7;-->
+<!--        overflow-y: auto;-->
+<!--      }-->
+
+<!--      .panel-content.is-active {-->
+<!--        display: block;-->
+<!--      }-->
+
+<!--      /* 列布局 */-->
+<!--      .columns.is-vcentered {-->
+<!--        align-items: center;-->
+<!--        min-height: 420px;-->
+<!--      }-->
+
+<!--      /* 响应式调整 */-->
+<!--      @media screen and (max-width: 768px) {-->
+<!--        .columns {-->
+<!--          flex-direction: column;-->
+<!--        }-->
+
+<!--        .column.is-half {-->
+<!--          width: 100%;-->
+<!--        }-->
+
+<!--        .image-container {-->
+<!--          width: 100%;-->
+<!--          height: 300px;-->
+<!--        }-->
+
+<!--        #panels {-->
+<!--          height: 180px;-->
+<!--        }-->
+<!--      }-->
+<!--    </style>-->
+<!--  </section>-->
+
+
+  <!-- Model -->
+  <section class="hero teaser" style="margin-top: 3rem;"> <!-- 添加顶部间距 -->
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <div class="section-title">
+          <h2 class="title is-3 has-text-centered" style="
+background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+font-weight: 700;
+margin-bottom: 0.5rem;
+">
+            SynWeatherDiff
+          </h2>
+          <!-- 底部分割线 -->
+          <div
+            style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">
+          </div>
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column">
+            <div class="publication-img">
+              <img id="architecture" src="assets/artimuse/images/paper/workflow.png"
+                style="width:800px; margin-top:10px;margin-bottom:10px;" />
+            </div>
+          </div>
+        </div>
+        <p style="margin-top: 0;">
+          <b>An overview of our SynWeatherDiff.</b> The target variables are projected into a unified latent space using a general autoencoder. The satellite inputs are processed through a ViT-based encoder to extract features. A task-specific text prompt is encoded using a fine-tuned CLIP text encoder. The text tokens serve as conditional information to guide Text-Guided DiT for different weather synthesis tasks.
+          granularity.
+        </p>
+      </div>
+    </div>
+  </section>
+
+
+<!--  &lt;!&ndash; Pipeline of ArtiMuse &ndash;&gt;-->
+<!--  &lt;!&ndash; Data Curation and Model Training &ndash;&gt;-->
+<!--  <section class="hero teaser">-->
+<!--    <div class="container is-max-desktop">-->
+<!--      <div class="hero-body">-->
+<!--        <div class="section-title">-->
+<!--          <h2 class="title is-3 has-text-centered" style="-->
+<!--          margin-bottom: 0.5rem;-->
+<!--          background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);-->
+<!--          -webkit-background-clip: text;-->
+<!--          -webkit-text-fill-color: transparent;-->
+<!--          font-weight: 700;">-->
+<!--            Data Curation and Model Training-->
+<!--          </h2>-->
+<!--          &lt;!&ndash; 底部分割线 &ndash;&gt;-->
+<!--          <div-->
+<!--            style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">-->
+<!--          </div>-->
+<!--        </div>-->
+
+<!--        <div class="columns is-centered has-text-centered">-->
+<!--          <div class="column">-->
+<!--            <div class="publication-img">-->
+<!--              <img id="architecture" src="assets/artimuse/images/paper/pipieline_page-0001.jpg"-->
+<!--                style="width:800px; margin-top:10px;margin-bottom:10px;" />-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; 修改为左对齐 &ndash;&gt;-->
+<!--        <p style="margin-top: 0; text-align: left;">-->
+<!--          <b>Pipeline of ArtiMuse.</b> ArtiMuse encompasses a multi-stage pipeline spanning <b>data collection &-->
+<!--            processing,-->
+<!--            annotation generation, and model training,</b> systematically enhancing its text evaluation capabilities and-->
+<!--          score-->
+<!--          assessment proficiency across multiple dimensions.-->
+<!--        </p>-->
+
+<!--      </div>-->
+<!--    </div>-->
+<!--  </section>-->
+
+
+
+  <!-- Results -->
+  <section class="hero teaser">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <div class="section-title">
+          <h2 class="title is-3 has-text-centered" style="
+          margin-bottom: 0.5rem;
+          background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-weight: 700;
+        ">
+            Main Results
+          </h2>
+          <!-- 底部分割线 -->
+          <div
+            style="width: 60px; height: 3px; background-color: #60a5fa; margin: 0 auto 1.5rem auto; border-radius: 2px;">
+          </div>
+          <!-- <h2 class="title is-3 is-centered"> Comparison with Existing Models </h2> -->
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column">
+            <p class="is-italic has-text-black" style="margin-bottom: 5px; font-size: 1rem;">
+            </p>
+            <div class="publication-img">
+              <img src="assets/artimuse/images/paper/Main-result.png" style="width:100%; margin-bottom:10px" alt="Teaser." />
+              <p style="margin-top: 0;">
+                Visual results of the weather synthesis standard tasks by our SynWeatherDiff and other models.
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- 需要先引入 Bulma 样式 -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+        <style>
+          /* 容器和表格基础样式 */
+          .table-container {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(100, 150, 255, 0.1);
+          }
+
+          table.table {
+            background-color: #ffffff;
+            border-radius: 0;
+            box-shadow: none;
+            border-collapse: separate;
+            /* 为了单独控制边框 */
+            border-spacing: 0 0;
+            /* 去除间距 */
+          }
+
+          /* 表头浅蓝色背景和字色 */
+          table.table thead tr:first-child th {
+            background: #d0e7ff;
+            color: #1a237e;
+            font-weight: 700;
+            font-size: 1.05rem;
+            border-bottom: 2px solid #90caf9;
+            border-left: none !important;
+            border-right: none !important;
+          }
+
+          table.table thead tr:nth-child(2) th {
+            background-color: #e6f0ff;
+            color: #3949ab;
+            font-weight: 600;
+            border-bottom: 1px solid #bbdefb;
+            border-left: none !important;
+            border-right: none !important;
+          }
+
+          /* 单元格居中，深灰字体，白底，无竖线 */
+          .table-container table.table td,
+          .table-container table.table th {
+            text-align: center !important;
+            vertical-align: middle !important;
+            color: #2c3e50;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.85rem;
+            background-color: #ffffff !important;
+            /* 统一白底 */
+            border-left: none !important;
+            /* 去除左边框 */
+            border-right: none !important;
+            /* 去除右边框 */
+            border-top: 1px solid #bbdefb !important;
+            /* 保留横线：上边框 */
+            border-bottom: 1px solid #bbdefb !important;
+            /* 保留横线：下边框 */
+          }
+
+          /* 第一行（thead）上边框加粗（避免两条线重叠） */
+          table.table thead tr:first-child th {
+            border-top: 3px solid #90caf9 !important;
+          }
+
+          /* 分组标题白底深蓝字，去掉背景浅蓝 */
+          tbody tr th.has-background-light {
+            background: #ffffff !important;
+            color: #1a237e;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            border: none !important;
+          }
+
+          /* 行悬浮白底不变，字体加深 */
+          tbody tr:hover:not(.highlight-row) {
+            background-color: #ffffff !important;
+            color: #0d47a1 !important;
+            cursor: default;
+            transition: color 0.3s ease;
+          }
+
+          /* 突出最后一行（我们的模型），始终生效 */
+          tbody tr.highlight-row {
+            background-color: #bbdefb !important;
+            color: #0d47a1 !important;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 0 12px 4px rgba(33, 150, 243, 0.7);
+            transform: scale(1.02);
+            transition: none;
+            /* 取消过渡动画 */
+          }
+        </style>
+        <p class="is-italic has-text-black has-text-centered" style="margin-bottom: 5px; font-size: 1rem;">
+          <b>CR Synthesis & Precipitation Synthesis Results</b>
+        </p>
+
+        <div class="table-container">
+        <table class="table is-bordered is-striped is-hoverable is-fullwidth is-size-7">
+
+          <thead>
+            <tr>
+              <th rowspan="3">Task name</th>
+              <th colspan="4">CR Synthesis</th>
+              <th colspan="7">Precipitation Synthesis</th>
+            </tr>
+
+            <tr>
+              <th colspan="4">CONUS</th>
+              <th colspan="4">CONUS</th>
+              <th colspan="3">Europe</th>
+            </tr>
+
+            <tr>
+              <th>RMSE↓</th>
+              <th>CSI/25↑</th>
+              <th>CSI/35↑</th>
+              <th>CSI/40↑</th>
+
+              <th>RMSE↓</th>
+              <th>CSI/2↑</th>
+              <th>CSI/5↑</th>
+              <th>CSI/15↑</th>
+
+              <th>RMSE↓</th>
+              <th>CSI/2↑</th>
+              <th>CSI/5↑</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr>
+              <td>SRViT<sup>#</sup></td>
+              <td>3.561</td><td>0.277</td><td>0.120</td><td>0.069</td>
+              <td>-</td><td>-</td><td>-</td><td>-</td>
+              <td>-</td><td>-</td><td>-</td>
+            </tr>
+
+            <tr>
+              <td>Deep-STEP<sup>#</sup></td>
+              <td>-</td><td>-</td><td>-</td><td>-</td>
+              <td><b>0.916</b></td><td>0.262</td><td>0.111</td><td>0.007</td>
+              <td><u>0.415</u></td><td><u>0.083</u></td><td>0.016</td>
+            </tr>
+
+            <tr>
+              <td>TomoPE<sup>#</sup></td>
+              <td>-</td><td>-</td><td>-</td><td>-</td>
+              <td>0.986</td><td>0.247</td><td>0.149</td><td>0.036</td>
+              <td><b>0.413</b></td><td>0.060</td><td>0.009</td>
+            </tr>
+
+            <tr>
+              <td>UNet<sup>#</sup></td>
+              <td>3.395</td><td>0.299</td><td>0.069</td><td>0.023</td>
+              <td>0.976</td><td>0.231</td><td>0.166</td><td>0.059</td>
+              <td>0.641</td><td>0.035</td><td>0.016</td>
+            </tr>
+
+            <tr>
+              <td>ViT<sup>#</sup></td>
+              <td>3.487</td><td>0.309</td><td>0.141</td><td><u>0.089</u></td>
+              <td>0.981</td><td>0.250</td><td>0.157</td><td>0.038</td>
+              <td>0.497</td><td><u>0.083</u></td><td><u>0.044</u></td>
+            </tr>
+
+            <tr>
+              <td>WeatherGFM<sup>†</sup></td>
+              <td><u>3.124</u></td><td><u>0.366</u></td><td><b>0.166</b></td><td>0.086</td>
+              <td>1.049</td><td><u>0.288</u></td><td><u>0.198</u></td><td><u>0.090</u></td>
+              <td>0.714</td><td>0.018</td><td>0.013</td>
+            </tr>
+
+            <tr>
+              <td>SynWeatherDiff<sup>†</sup></td>
+              <td><b>2.820</b></td><td><b>0.382</b></td><td><u>0.158</u></td><td><b>0.101</b></td>
+              <td><u>0.976</u></td><td><b>0.312</b></td><td><b>0.223</b></td><td><b>0.113</b></td>
+              <td>0.569</td><td><b>0.084</b></td><td><b>0.079</b></td>
+            </tr>
+
+          </tbody>
+        </table>
+        </div>
+
+        <p class="is-italic has-text-black has-text-centered" style="margin-bottom: 5px; font-size: 1rem;">
+          <b>Visible Light & Microwave Brightness Temperature Synthesis Results</b>
+        </p>
+
+        <div class="table-container">
+        <table class="table is-bordered is-striped is-hoverable is-fullwidth is-size-7">
+
+          <thead>
+            <tr>
+              <th rowspan="3">Task name</th>
+              <th colspan="6">Visible Light Synthesis</th>
+              <th colspan="5">MWBT Synthesis</th>
+            </tr>
+
+            <tr>
+              <th colspan="3">East Asia</th>
+              <th colspan="3">Europe</th>
+              <th colspan="5">Tropical Cyclone Region</th>
+            </tr>
+
+            <tr>
+              <th>SSIM↑</th><th>PSNR↑</th><th>CSI/50↑</th>
+              <th>SSIM↑</th><th>PSNR↑</th><th>CSI/50↑</th>
+
+              <th>RMSE↓</th><th>SSIM↑</th><th>PSNR↑</th><th>LPIPS↓</th><th>CSI/300↑</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr>
+              <td>ViT<sup>#</sup></td>
+              <td><u>0.870</u></td><td><u>20.87</u></td><td>0.672</td>
+              <td>0.860</td><td><u>24.03</u></td><td>0.496</td>
+
+              <td><u>4.768</u></td><td>0.783</td><td>21.56</td><td>0.324</td><td><u>0.792</u></td>
+            </tr>
+
+            <tr>
+              <td>UNet<sup>#</sup></td>
+              <td><b>0.917</b></td><td><b>21.67</b></td><td><b>0.711</b></td>
+              <td><b>0.878</b></td><td><b>24.82</b></td><td><b>0.556</b></td>
+
+              <td>5.803</td><td>0.816</td><td>20.6</td><td><u>0.329</u></td><td>0.741</td>
+            </tr>
+
+            <tr>
+              <td>WeatherGFM<sup>†</sup></td>
+              <td>0.822</td><td>18.43</td><td>0.465</td>
+              <td>0.836</td><td>22.26</td><td>0.396</td>
+
+              <td>4.979</td><td><u>0.828</u></td><td><u>21.86</u></td><td>0.325</td><td>0.777</td>
+            </tr>
+
+            <tr>
+              <td>SynWeatherDiff<sup>†</sup></td>
+              <td>0.868</td><td>19.79</td><td><u>0.690</u></td>
+              <td><u>0.864</u></td><td>23.65</td><td><u>0.508</u></td>
+
+              <td><b>4.456</b></td><td><b>0.837</b></td><td><b>22.33</b></td><td><b>0.254</b></td><td><b>0.795</b></td>
+            </tr>
+
+          </tbody>
+        </table>
+        </div>
+
+
+  </section>
+
+  <!-- More Results -->
+  <!-- <section class="section" style="margin-top:-50px; margin-bottom:-50px;">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <div class="section-title">
+          <h2 class="title is-3 is-centered">Comparison with Existing Methods </h2>
+        </div>
+        <div class="columns is-centered has-text-centered">
+          <div class="column">
+            <div class="publication-img">
+              <img id="architecture" src="assets/artimuse/images/paper/aigc_comp_page-0001.jpg"
+                style="width:800px; margin-top:10px;margin-bottom:10px;" />
+              <img id="architecture" src="assets/artimuse/images/paper/photo_comp_page-0001.jpg"
+                style="width:800px; margin-top:10px;margin-bottom:10px;" />
+              <img id="architecture" src="assets/artimuse/images/paper/painting_comp_page-0001.jpg"
+                style="width:800px; margin-top:10px;margin-bottom:10px;" />
+            </div>
+          </div>
+        </div>
+        <p style="margin-top: 0;">
+
+        </p>
+
+      </div>
+    </div>
+  </section> -->
+
+<!--  &lt;!&ndash; BibTeX &ndash;&gt;-->
+<!--  <section class="hero is-light is-small" id="BibTeX">-->
+<!--    <div class="container is-max-desktop content" style="margin-top: 40px; margin-bottom: 20px;">-->
+<!--      <h2 class="title">BibTeX</h2>-->
+<!--      <p>If you find our work useful, please consider citing our paper:</p>-->
+<!--      <pre><code>@misc{cao2025artimusefinegrainedimageaesthetics,-->
+<!--      title={SynWeather: Weather Observation Data Synthesis across Multiple Regions and Variables via a General Diffusion Transformer},-->
+<!--      author={Shuo Cao and Nan Ma and Jiayang Li and Xiaohui Li and Lihao Shao and Kaiwen Zhu and Yu Zhou and Yuandong Pu and Jiarui Wu and Jiaquan Wang and Bo Qu and Wenhai Wang and Yu Qiao and Dajuin Yao and Yihao Liu},-->
+<!--      year={2025},-->
+<!--      eprint={2507.14533},-->
+<!--      archivePrefix={arXiv},-->
+<!--      primaryClass={cs.CV},-->
+<!--      url={https://arxiv.org/abs/2507.14533}, -->
+<!--}</code></pre>-->
+
+      <!-- <p>Our related projects: <a href="https://vchitect.github.io/Evaluation-Agent-project/" target="_blank"
+          style="color: #007BFF;">Evaluation Agent</a></p>
+      <pre><code>@article{zhang2024evaluationagent,
+  title = {Evaluation Agent: Efficient and Promptable Evaluation Framework for Visual Generative Models},
+  author = {Zhang, Fan and Tian, Shulin and Huang, Ziqi and Qiao, Yu and Liu, Ziwei},
+  journal={arXiv preprint arXiv:2412.09645},
+  year = {2024}
+}</code></pre> -->
+    </div>
+  </section>
+
+
+  <!-- footer
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <a class="icon-link" href="https://vchitect.github.io/artimuse-project/">
+          <i class="fas fa-file-pdf"></i>
+        </a>
+        <a class="icon-link" href="https://github.com/Vchitect/artimuse" class="external-link" disabled>
+          <i class="fab fa-github"></i>
+        </a>
+      </div>
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content">
+            <p>
+              This website is licensed under a <a rel="license"
+                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+                Commons Attribution-ShareAlike 4.0 International License</a>.
+            </p>
+            <p>
+              Website source code based on the <a href="https://nerfies.github.io/"> Nerfies</a> project page. If you
+              want to reuse their <a href="https://github.com/nerfies/nerfies.github.io">source code</a>, please credit
+              them appropriately.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer> -->
+
+</body>
+
+</html>
